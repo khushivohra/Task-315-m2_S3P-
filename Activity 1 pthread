@@ -1,0 +1,71 @@
+#include <iostream>
+#include <chrono>
+#include <cstdlib>
+#include <pthread.h>
+
+using namespace std;
+using namespace std::chrono;
+
+const unsigned long SIZE = 100000000;
+
+struct ThreadData {
+    int* v1;
+    int* v2;
+    int* v3;
+    unsigned long start;
+    unsigned long end;
+};
+
+void* addVectors(void* arg) {
+    ThreadData* data = static_cast<ThreadData*>(arg);
+    for (unsigned long i = data->start; i < data->end; ++i) {
+        data->v3[i] = data->v1[i] + data->v2[i];
+    }
+    pthread_exit(NULL);
+}
+
+void randomVector(int vector[], unsigned long size) {
+    for (unsigned long i = 0; i < size; ++i) {
+        vector[i] = rand() % 100;
+    }
+}
+
+int main() {
+    srand(time(0));
+    int *v1 = new int[SIZE];
+    int *v2 = new int[SIZE];
+    int *v3 = new int[SIZE];
+
+    randomVector(v1, SIZE);
+    randomVector(v2, SIZE);
+
+    auto start = high_resolution_clock::now();
+
+    const int numThreads = 4;
+    pthread_t threads[numThreads];
+    ThreadData threadData[numThreads];
+
+    unsigned long chunkSize = SIZE / numThreads;
+    for (int i = 0; i < numThreads; ++i) {
+        threadData[i].v1 = v1;
+        threadData[i].v2 = v2;
+        threadData[i].v3 = v3;
+        threadData[i].start = i * chunkSize;
+        threadData[i].end = (i == numThreads - 1) ? SIZE : (i + 1) * chunkSize;
+        pthread_create(&threads[i], NULL, addVectors, &threadData[i]);
+    }
+
+    for (int i = 0; i < numThreads; ++i) {
+        pthread_join(threads[i], NULL);
+    }
+
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(stop - start);
+    cout << "Time taken by pthread implementation: " << duration.count() << " microseconds" << endl;
+
+    delete[] v1;
+    delete[] v2;
+    delete[] v3;
+
+    return 0;
+}
