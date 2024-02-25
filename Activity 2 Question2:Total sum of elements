@@ -18,7 +18,9 @@ int main() {
   unsigned long size = 100000000;
   srand(time(0));
   int *v1, *v2, *v3;
-  unsigned long total = 0; // Shared variable for total sum
+  unsigned long total = 0; /
+
+  auto start = high_resolution_clock::now(); 
 
   #pragma omp parallel default(none) shared(size, total) private(v1, v2, v3)
   {
@@ -35,7 +37,7 @@ int main() {
     #pragma omp for
     for (int i = 0; i < size; i++) {
       v3[i] = v1[i] + v2[i];
-      #pragma omp atomic 
+      #pragma omp atomic
       total += v3[i];
     }
 
@@ -44,7 +46,11 @@ int main() {
     free(v3);
   }
 
+  auto stop = high_resolution_clock::now(); 
+  auto duration = duration_cast<microseconds>(stop - start); 
+
   cout << "Total sum of elements in v3: " << total << endl;
+  cout << "Time taken: " << duration.count() << " microseconds" << endl; execution time
 
   return 0;
 }
